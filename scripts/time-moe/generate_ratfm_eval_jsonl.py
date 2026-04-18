@@ -60,9 +60,8 @@ def find_matching_files(domain_dict, target_domain, folder):
     return [f for p in domain_dict[target_domain] for f in os.listdir(folder) if p in f and f.endswith('.txt')]
 
 # Generate aligned test sequences using best-matching training subsequences
-def concatenate_sequences(target_file, candidate_files, folder, context_length, forecast_horizon):
+def concatenate_sequences(target_file, candidate_data, folder, context_length, forecast_horizon):
     target_data, target_labels = process_txt_file_test(folder, target_file)
-    candidate_data = {f: process_txt_file_train(folder, f) for f in candidate_files}
 
     new_sequences = []
     stride = forecast_horizon
@@ -84,7 +83,9 @@ def concatenate_sequences(target_file, candidate_files, folder, context_length, 
         t_label = target_labels[seq_end:pred_end]
 
         best_score, best_seq, best_pred = -1, None, None
-        for data in candidate_data.values():
+        for f, data in candidate_data.items():
+            if f == target_file:
+                continue
             for i in range(len(data) - context_length - forecast_horizon + 1):
                 c_seq = data[i:i+context_length]
                 c_pred = data[i+context_length:i+context_length+forecast_horizon]
@@ -105,6 +106,8 @@ def convert_to_jsonl(domain, domain_dict, folder, output_file, context_length, f
     if not candidates:
         print(f"No matching files found for: {domain}")
         return
+
+    candidate_data = {f: process_txt_file_train(folder, f) for f in candidates}
 
     with open(output_file, 'w', encoding='utf-8') as out:
         for target in candidates:
@@ -150,4 +153,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
