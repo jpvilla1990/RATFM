@@ -41,9 +41,8 @@ def find_matching_files(domain_dict, target_domain, folder):
     return [f for p in domain_dict[target_domain] for f in os.listdir(folder) if p in f and f.endswith('.txt')]
 
 # Generate aligned training pairs from best-matching subsequences
-def concatenate_sequences(target_file, candidate_files, folder, context_length, forecast_horizon):
+def concatenate_sequences(target_file, candidate_data, folder, context_length, forecast_horizon):
     target_data = process_txt_file(folder, target_file)
-    candidate_data = {f: process_txt_file(folder, f) for f in candidate_files}
 
     new_sequences = []
     stride = context_length + forecast_horizon
@@ -65,7 +64,9 @@ def concatenate_sequences(target_file, candidate_files, folder, context_length, 
         t_pred = target_data[seq_end:pred_end]
 
         best_score, best_seq, best_pred = -1, None, None
-        for data in candidate_data.values():
+        for f, data in candidate_data.items():
+            if f == target_file:
+                continue
             for i in range(len(data) - context_length - forecast_horizon + 1):
                 c_seq = data[i:i+context_length]
                 c_pred = data[i+context_length:i+context_length+forecast_horizon]
@@ -87,13 +88,15 @@ def convert_to_jsonl(domain, domain_dict, folder, output_file, context_length, f
         print(f"No matching files found for: {domain}")
         return
 
+    candidate_data = {f: process_txt_file(folder, f) for f in candidates}
+
     with open(output_file, 'w', encoding='utf-8') as out:
         for target in candidates:
             print(f"Processing {target}")
             others = [f for f in candidates if f != target]
             if not others:
                 continue
-            sequences = concatenate_sequences(target, others, folder, context_length, forecast_horizon)
+            sequences = concatenate_sequences(target, candidate_data, folder, context_length, forecast_horizon)
             flat = [item for seq in sequences for item in seq]
             out.write(json.dumps({'sequence': flat}) + '\n')
     print(f"Saved to: {output_file}")
