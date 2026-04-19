@@ -4,6 +4,7 @@ import json
 import numpy as np
 from numpy.linalg import norm
 from sklearn.preprocessing import StandardScaler
+from multiprocessing import Pool, cpu_count
 import yaml
 
 
@@ -100,7 +101,8 @@ def concatenate_sequences(target_file, candidate_data, folder, context_length, f
     return new_sequences
 
 # Convert matching results into .jsonl dataset with labels
-def convert_to_jsonl(domain, domain_dict, folder, output_file, context_length, forecast_horizon):
+def convert_to_jsonl(args):
+    domain, domain_dict, folder, output_file, context_length, forecast_horizon = args
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     candidates = find_matching_files(domain_dict, domain, folder)
     if not candidates:
@@ -146,12 +148,16 @@ def main():
         domain_dict = json.load(f)
 
     # 各ドメインについてデータ変換を実行
-    for domain in domain_dict:
-        print(f"Building dataset for: {domain}")
-        output_file = os.path.join(output_test_dir, f"{domain}.jsonl")
-        convert_to_jsonl(domain, domain_dict, ucr_root_path, output_file, context_length, forecast_horizon)
+    args_list = [
+        (domain, domain_dict, ucr_root_path, os.path.join(output_test_dir, f"{domain}.jsonl"), context_length, forecast_horizon)
+        for domain in domain_dict
+    ]
+    with Pool(processes=cpu_count()) as pool:
+        pool.map(convert_to_jsonl, args_list)
 
 if __name__ == "__main__":
     main()
+
+
 
 
