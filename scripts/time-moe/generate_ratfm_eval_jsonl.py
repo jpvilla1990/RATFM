@@ -117,7 +117,7 @@ def convert_to_jsonl(args):
             others = [f for f in candidates if f != target]
             if not others:
                 continue
-            sequences = concatenate_sequences(target, others, folder, context_length, forecast_horizon)
+            sequences = concatenate_sequences(target, candidate_data, folder, context_length, forecast_horizon)
 
             combined_seq = []
             combined_lbl = []
@@ -157,7 +157,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
 
