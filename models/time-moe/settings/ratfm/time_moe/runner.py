@@ -38,7 +38,7 @@ class TimeMoeRunner:
         train_config = kwargs
 
         num_devices = get_world_size()
-        
+
         global_batch_size = train_config.get('global_batch_size', None)
         micro_batch_size = train_config.get('micro_batch_size', None)
 
@@ -92,7 +92,7 @@ class TimeMoeRunner:
         training_args = TimeMoETrainingArguments(
             output_dir=self.output_path,
             num_train_epochs=num_train_epochs,
-            # use_cpu=True,
+            use_cpu=False if torch.cuda.is_available() else True,
             max_steps=train_steps,
             evaluation_strategy=train_config.get("evaluation_strategy", 'no'),
             eval_steps=_safe_float(train_config.get("eval_steps", None)),
@@ -135,7 +135,7 @@ class TimeMoeRunner:
         if model_path is not None:
             model = self.load_model(
                 model_path=model_path,
-                device_map="cuda:2", ###
+                device_map="cuda:2" if torch.cuda.is_available() else "cpu",
                 torch_dtype=torch_dtype,
                 attn_implementation=train_config.get('attn_implementation', 'eager')
             )
